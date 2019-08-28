@@ -391,39 +391,40 @@ app.loadMessagesListPage = function () {
       'getAll': true
     };
 
+    // Accessing template element
+    let messagesContainter = document.querySelector('#messagesContainer');
+    let messageTemplate = document.querySelector("#messageTemplate");
+
+
     app.client.request(undefined, 'api/messages', 'POST', undefined, payload, (statusCode, responsePayload) => {
 
       if (statusCode == 200) {
         // TODO Do something with response
+        let allMessages = typeof (responsePayload.messages) == 'object' && responsePayload.messages instanceof Array && responsePayload.messages.length > 0 ? responsePayload.messages : [];
 
-        // Accessing template element
-        let messagesContainter = document.querySelector('#messagesContainer');
-        let messageTemplate = document.querySelector("#messageTemplate");
-        let msgName = messageTemplate.querySelector('#msgName');
-        let msgDate = messageTemplate.querySelector('#msgDate');
-        let msgTitle = messageTemplate.querySelector('#msgTitle');
-        let msgContent = messageTemplate.querySelector("#msgContent");
+        if (allMessages.length > 0) {
+          // Create messages
+          let messagesArray = responsePayload.messages;
+          messagesArray.forEach(message => {
+            let clonedTemplate = messageTemplate.content.cloneNode(true);
+            let msgName = clonedTemplate.querySelector('#msgName')
+            let msgDate = clonedTemplate.querySelector('#msgDate');
+            let msgTitle = clonedTemplate.querySelector('#msgTitle');
+            let msgContent = clonedTemplate.querySelector("#msgContent");
+            
+            msgName.innerHTML = message.phone;
+            msgDate.innerHTML = message.creationDate;
+            msgTitle.innerHTML = message.title;
+            msgContent.innerHTML = message.content;
 
-        // Create messages
-        let messagesArray = responsePayload.messages;
-        for (var i = 0; i < messagesArray.length; i++) {
-          (function (i) {
-            console.log(messagesArray[i])
-            // Setting the value to template
-            msgName.innerHTML = messagesArray[i].title;
-            msgName.innerHTML = messagesArray[i].creationDate;
-            msgTitle.innerHTML = messagesArray[i].title;
-            msgContent.innerHTML = messagesArray[i].content;
+            messagesContainter.appendChild(clonedTemplate);
 
-            // Cloning and inserting template to the container div
-            messagesContainter.appendChild(messageTemplate.cloneNode(true));
-          })(i);
+          });
+
+
+        } else {
+          console.log(responsePayload)
         }
-
-
-
-
-
 
       } else {
         console.log(statusCode)
@@ -467,5 +468,6 @@ app.init = function () {
 
 // Call the init processes after the window loads
 window.onload = function () {
+  console.log('Page loaded')
   app.init();
 }
