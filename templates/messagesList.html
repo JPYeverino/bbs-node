@@ -1,0 +1,31 @@
+<h1>Dashboard</h1>
+<h2>Review all your messages</h2>
+<hr />
+
+
+<div class="formWrapper">
+  <form action="/api/messages/" method="GET" id="dashboard">
+    <div class="formError"></div>
+    <div class="inputWrapper">
+      <div class="inputLabel">Records per page</div>
+      <div class="checkboxGroup">
+        <input type="radio" class="multiselect intval" name="pagination" value="5">5
+        <input type="radio" class="multiselect intval" name="pagination" value="10">10
+      </div>
+    </div>
+  </form>
+</div>
+
+<div id="createCheckCTA" class="ctaWrapper">
+  <a class="cta green" href="messages/create">Create a Message</a>
+</div>
+
+<div id="messagesContainer"></div>
+
+<template id="messageTemplate">
+  <div class="blurb">
+    <h3>User name: <span id="msgName"></span> <span id="msgTitle">Title</span></h3>
+    <h4>Date: <span id="msgDate"></span></h4>
+    <p id="msgContent"></p>
+  </div>
+</template>
