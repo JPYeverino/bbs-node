@@ -1,26 +1,29 @@
 <h1>Dashboard</h1>
 <h2>Review all your messages</h2>
+<a class="backButton" href="/messages/create">Write a message</a>
 <hr />
 
 
 <div class="formWrapper">
-  <form action="/api/messages/" method="GET" id="dashboard">
-    <div class="formError"></div>
-    <div class="inputWrapper">
-      <div class="inputLabel">Records per page</div>
-      <div class="checkboxGroup">
-        <input type="radio" class="multiselect intval" name="pagination" value="5">5
-        <input type="radio" class="multiselect intval" name="pagination" value="10">10
-      </div>
-    </div>
+  <form action="/api/messages/" method="POST" id="dashboard">
+    <input class="hiddenPhoneNumberInput" type="hidden" name="phone" />
   </form>
 </div>
 
-<div id="createCheckCTA" class="ctaWrapper">
-  <a class="cta green" href="messages/create">Create a Message</a>
+<div class="inputLabel">Records per page</div>
+<div class="pagination">
+  <a href="#" class="pgSize">5</a>
+  <a href="#" class="pgSize">10</a>
+</div>
+<div class="inputLabel">Page</div>
+<div class="paginationLinks checkboxGroup">
 </div>
 
 <div id="messagesContainer"></div>
+
+<template class="pagTemplate">
+  <a href="#" class="pageNum"></a>
+</template>
 
 <template id="messageTemplate">
   <div class="blurb">

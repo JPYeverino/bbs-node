@@ -89,6 +89,58 @@ app.bindLogoutButton = function () {
   });
 };
 
+// Bind the pagination button
+app.bindPaginationButtons = function () {
+
+  let pgSizeButtons = document.getElementsByClassName('pgSize');
+  if (pgSizeButtons.length > 0) {
+    // Add listener to the click event
+    for (let i = 0; i < pgSizeButtons.length; i++) {
+      pgSizeButtons[i].addEventListener('click', e => {
+        // Stop it from redirecting anywhere.
+        e.preventDefault();
+
+        // Store State
+        localStorage.setItem('pagination', pgSizeButtons[i].innerHTML)
+        // Re-render messages
+        app.changePageSize(pgSizeButtons[i].innerHTML);
+
+
+      });
+    }
+  }
+};
+
+// Bind the page number button
+app.bindPageNumberButtons = function () {
+
+  let pgNumButtons = document.getElementsByClassName('pageNum');
+
+  if (pgNumButtons.length > 0) {
+    // Add listener to the click event
+    for (let i = 0; i < pgNumButtons.length; i++) {
+      pgNumButtons[i].addEventListener('click', e => {
+        // Stop it from redirecting anywhere.
+        e.preventDefault();
+
+        // Store State
+        localStorage.setItem('page', pgNumButtons[i].innerHTML);
+        app.changePageNumber(pgNumButtons[i].innerHTML);
+      });
+    }
+  }
+}
+
+app.changePageSize = function (pagination) {
+  let page = localStorage.getItem('page') ? localStorage.getItem('page') : false;
+  app.loadMessagesList(pagination, page);
+};
+
+app.changePageNumber = function (page) {
+  let pagination = localStorage.getItem('pagination') ? localStorage.getItem('pagination') : false;
+  app.loadMessagesList(pagination, page);
+};
+
 // Log the user out then redirect them
 app.logUserOut = function () {
   // Get the current token ide
@@ -115,7 +167,6 @@ app.bindForms = function () {
     const allForms = document.querySelectorAll("form");
     for (let i = 0; i < allForms.length; i++) {
       allForms[i].addEventListener("submit", function (e) {
-
         // Stop from submitting
         e.preventDefault();
         let formId = this.id;
@@ -310,7 +361,10 @@ app.loadDataOnPage = function () {
   }
 
   if (primaryClass == 'messagesList') {
-    app.loadMessagesListPage();
+    let pagination = localStorage.getItem('pagination') ? localStorage.getItem('pagination') : false;
+    let pageNumber = localStorage.getItem('pageNumber') ? localStorage.getItem('pageNumber') : false;
+    app.loadMessagesListPage(pagination, pageNumber);
+
   }
 };
 
@@ -379,57 +433,90 @@ app.loadMessageCreatePage = function () {
 
 };
 
-// Load the dashboard page specifically
+// Load the data for Dashboard loading
 app.loadMessagesListPage = function () {
+  app.loadMessagesList();
+};
+
+
+// Render the messages list
+app.loadMessagesList = function (pagination, page) {
+  console.log(page)
   // Get the phone number from the current token, or log the user out if none is there
-  let phone = typeof (app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+  let phone = typeof(app.config.sessionToken.phone) == 'string' ? app.config.sessionToken.phone : false;
+  pagination = typeof(pagination) == 'string' ? parseInt(pagination) : false;
+  page = typeof(page) == 'string' ? page : false;
   if (phone) {
-    // Fetch the user data
 
     let payload = {
-      'phone': phone,
-      'getAll': true
+      'getAll': true,
+      phone,
+      pagination,
+      page
     };
-
+    console.log(payload)
     // Accessing template element
     let messagesContainter = document.querySelector('#messagesContainer');
     let messageTemplate = document.querySelector("#messageTemplate");
+    let paginationContainer = document.querySelector(".paginationLinks");
+    let paginationTemplate = document.querySelector(".pagTemplate");
 
 
     app.client.request(undefined, 'api/messages', 'POST', undefined, payload, (statusCode, responsePayload) => {
 
       if (statusCode == 200) {
-        // TODO Do something with response
-        let allMessages = typeof (responsePayload.messages) == 'object' && responsePayload.messages instanceof Array && responsePayload.messages.length > 0 ? responsePayload.messages : [];
 
+        let allMessages = typeof (responsePayload.messages) == 'object' && responsePayload.messages instanceof Array && responsePayload.messages.length > 0 ? responsePayload.messages : [];
+        let numPages = typeof (responsePayload.numPages) == 'number' && responsePayload.numPages > 0 ? responsePayload.numPages : 1;
         if (allMessages.length > 0) {
+
+          // Remove existing list of messages to re render paginated messages
+          while (messagesContainter.firstChild) {
+            messagesContainter.removeChild(messagesContainter.firstChild);
+          }
+
+          // Remove existing list of messages to re render paginated messages
+          while (paginationContainer.firstChild) {
+            paginationContainer.removeChild(paginationContainer.firstChild);
+          }
+
+          // Create pagination
+          for (let i = 1; i <= numPages; i++) {
+            // Access template
+            let clonedTemplate = paginationTemplate.content.cloneNode(true);
+            let pagNumber = clonedTemplate.querySelector('.pageNum');
+            // Assign template value
+            pagNumber.innerText = parseInt(i);
+            // Append cloned fragment to the DOM
+            paginationContainer.appendChild(clonedTemplate);
+
+          }
+
           // Create messages
           let messagesArray = responsePayload.messages;
           messagesArray.forEach(message => {
+            // Access template
             let clonedTemplate = messageTemplate.content.cloneNode(true);
             let msgName = clonedTemplate.querySelector('#msgName')
             let msgDate = clonedTemplate.querySelector('#msgDate');
             let msgTitle = clonedTemplate.querySelector('#msgTitle');
             let msgContent = clonedTemplate.querySelector("#msgContent");
-            
+            // Assign template value
             msgName.innerHTML = message.phone;
             msgDate.innerHTML = message.creationDate;
             msgTitle.innerHTML = message.title;
             msgContent.innerHTML = message.content;
-
+            // Append cloned fragment to the DOM
             messagesContainter.appendChild(clonedTemplate);
-
           });
-
-
         } else {
           console.log(responsePayload)
         }
-
+        app.bindPageNumberButtons();
       } else {
         console.log(statusCode)
         // If the request comes back as something other than 200, log the user out
-        // app.logUserOut();
+        app.logUserOut();
       }
     });
   } else {
@@ -455,6 +542,8 @@ app.init = function () {
 
   // Bind logout button
   app.bindLogoutButton();
+  app.bindPaginationButtons();
+  
 
   // Get the token from localstorage
   app.getSessionToken();
@@ -468,6 +557,5 @@ app.init = function () {
 
 // Call the init processes after the window loads
 window.onload = function () {
-  console.log('Page loaded')
   app.init();
 }
